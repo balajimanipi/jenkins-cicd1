@@ -1,0 +1,103 @@
+
+
+
+Scripted Pipeline
+===================
+node('master/sllave')
+{
+	stage('Stage name in CI-CD')
+	{
+		Groovy code for implementing this stage
+	}
+}
+
+
+Declarative Pipeline
+======================
+pipeline
+{
+	agent any
+	stages
+	{
+		stage('Continues Download')
+		{
+			steps
+			{
+				script
+					{
+						try
+							{
+								git 'https://github.com/balajimanipi/java-pro.git'
+							}
+						catch(Exception e)
+							{
+								mail bcc: '', body: 'Continues Download Failed', cc: '', from: '', replyTo: '', subject: 'Git Donload Continues Download Failed', to: 'gitadmin@gmail.com'
+								exit(1)
+							}			
+					}
+			}
+		}
+		
+			
+		stage('Continues Build')
+		{
+			steps
+			{
+				sh 'mvn package'
+			}
+		}		
+		stage('Continues Deploy')
+		{
+			steps
+			{
+				sh 'scp /var/lib/jenkins/workspace/S-Pipeline/webapp/target/webapp.war root@192.168.75.130:/var/lib/tomcat9/webapps/testenv.war'
+			}
+		}	
+		stage('Continues Testing')
+		{
+			steps
+			{
+				git 'https://github.com/balajimanipi/FunctionlTesting.git'
+				sh 'java -jar testing.jar'
+			}
+		}	
+	}
+	post
+	{
+		success
+		{
+				input message: 'Waiting for Approvel from the DM', submitter: 'DM'
+				sh 'scp /var/lib/jenkins/workspace/S-Pipeline/webapp/target/webapp.war root@192.168.75.132:/var/lib/tomcat9/webapps/prodenv.war'
+		}
+		failure
+		{
+			mail bcc: '', body: 'Some of the Stage Build Failed', cc: '', from: '', replyTo: '', subject: 'Build Failed', to: 'mbalajimanapi@gmail.com'
+		}			
+	}
+}
+
+node('srv1') 
+{
+    stage('Continues Download') 
+    {
+        git 'https://github.com/balajimanipi/java-pro.git'
+    }
+    stage('Continues Build') 
+    {
+        sh 'mvn package'
+    } 
+    stage('Continues Deploy') 
+    {
+        sh 'scp /var/lib/jenkins/workspace/S-Pipeline/webapp/target/webapp.war root@192.168.75.130:/var/lib/tomcat9/webapps/testenv.war'
+    }  
+    stage('Continues Testing') 
+    {
+        git 'https://github.com/balajimanipi/FunctionlTesting.git'
+        sh 'java -jar testing.jar'
+    }    
+    stage('Continues Delivery') 
+    {
+        input message: 'Waiting for Approvel from the DM', submitter: 'DM'
+        sh 'scp /var/lib/jenkins/workspace/S-Pipeline/webapp/target/webapp.war root@192.168.75.132:/var/lib/tomcat9/webapps/prodenv.war'
+    }     
+}
